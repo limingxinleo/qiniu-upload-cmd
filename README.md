@@ -9,3 +9,10 @@
 ```
 go run main.go push data test
 ```
+
+## 打包
+
+```
+docker build -t uploader .
+docker cp <container id>:/go/builder/app uploader
+```
