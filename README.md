@@ -14,5 +14,6 @@ go run main.go push data test
 
 ```
 docker build -t uploader .
+docker run uploader:latest
 docker cp <container id>:/go/builder/app uploader
 ```
