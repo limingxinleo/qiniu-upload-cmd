@@ -9,12 +9,14 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 )
 
 var accessKey = ""
 var secretKey = ""
 var bucket = ""
 var PthSep = string(os.PathSeparator)
+var concurrent = 2
 
 var rootCmd = &cobra.Command{
 	Use:   "push [dirName] [targetName]",
@@ -25,13 +27,29 @@ var rootCmd = &cobra.Command{
 		dirName := args[1]
 		targetName := args[2]
 		files := getFiles(dirName)
-		var target string
+		pool := make(chan bool, concurrent)
+		defer close(pool)
+
 		for _, file := range files {
-			target = strings.Replace(file, dirName, targetName, 1)
-			upload(file, target)
-			fmt.Println(fmt.Sprintf("文件 %s 上传到 %s 对应文件名 %s", file, bucket, target))
+			pool <- true
+			go uploadCallback(pool, bucket, file, dirName, targetName)
+		}
+		
+		for {
+			len := len(pool)
+			time.Sleep(time.Second)
+			if len == 0 {
+				break
+			}
 		}
 	},
+}
+
+func uploadCallback(pool chan bool, bucket string, file string, dirName string, targetName string){
+	target := strings.Replace(file, dirName, targetName, 1)
+	upload(file, target)
+	fmt.Println(fmt.Sprintf("文件 %s 上传到 %s 对应文件名 %s", file, bucket, target))
+	<- pool
 }
 
 func getFiles(dirName string) []string {
